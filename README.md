@@ -19,7 +19,7 @@ data. The monitoring device will record and generate this .h5 file data for diss
 
 ## Options
 
-`-u` update training model used for disaggregation.
+`-u` update training model before disaggregation.
 
 `python main.py -u`
 
