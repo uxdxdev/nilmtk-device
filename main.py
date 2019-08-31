@@ -1,6 +1,7 @@
 import nilmtk
 from nilmtk import DataSet
 import dissagregate
+from api import send_report
 
 # simulate receiving mains data from remote monitoring device
 # by loading dataset and restrict to 1 week
@@ -44,10 +45,16 @@ print("Appliance load average seconds {:.2f}".format(avgSecondsPerLoad))
 avgSecondsPerLoadLow = avgSecondsPerLoad * .80
 avgSecondsPerLoadHigh = avgSecondsPerLoad * 1.20
 
+reports = []
+
 for secondsPerLoad in secondsPerLoadList:
     precentage = ((secondsPerLoad - avgSecondsPerLoad) /
                   avgSecondsPerLoad) * 100
     if precentage > 50 or precentage < -50:
         print("Load is +/-50% of average at {} seconds".format(secondsPerLoad))
-        print("abnormal load detected: average {:.2f} precentage {:.2f}% duration {:.2f}".format(
-            avgSecondsPerLoad, precentage, secondsPerLoad))
+        reportText = "abnormal load detected: average {:.2f} precentage {:.2f}% duration {:.2f}".format(
+            avgSecondsPerLoad, precentage, secondsPerLoad)
+        print(reportText)
+        reports.append({"reportText": reportText})
+
+send_report(reports[0]["reportText"])
