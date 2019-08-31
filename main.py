@@ -1,7 +1,17 @@
+import sys
+sys.path.append('./train')
+import model
 import nilmtk
 from nilmtk import DataSet
-import dissagregate
+import disaggregate
 from api import send_report
+import urllib.request
+
+# to update the model pass -u as an argument when running main.py
+flag_update = False
+if len(sys.argv) > 1 and sys.argv[1] == '-u':
+    print('Model will be updated')
+    flag_update = True
 
 # simulate receiving mains data from remote monitoring device
 # by loading dataset and restrict to 1 week
@@ -13,13 +23,23 @@ building = 1
 data.set_window(start='2011-04-20', end='2011-04-27')
 training_building = data.buildings[building].elec
 
-# train the model on the data received
+# get mains readings from training building
 mains = training_building.mains()
 
+# download model from remote server
 url = 'https://drive.google.com/uc?authuser=0&id=1xkpI7QQ4jZ1wQJauI0Kn65Q2OeUzL32l&export=download'
-predictions = dissagregate.dissagregate(mains, url)
 
-# # Unknown submeter - avg seconds per load
+if flag_update:
+    url = model.update_model()
+
+print('Model URL', url)
+model_path = 'models/latest_model.pickle'
+urllib.request.urlretrieve(url, model_path)
+
+# use model during disaggregation
+predictions = disaggregate.disaggregate(mains, model_path)
+
+# Unknown submeter - avg seconds per load
 secondsPerLoadList = []
 seconds = 0
 preValue = 0
