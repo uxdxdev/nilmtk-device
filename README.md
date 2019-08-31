@@ -17,7 +17,13 @@ data. The monitoring device will record and generate this .h5 file data for diss
 
 `python main.py`
 
+## Options
+
+`-u` update training model used for disaggregation.
+
+`python main.py -u`
+
 # Information
 
-`nilmtk-device` runs on a monitoring device installed in the home connected to
+`nilmtk-device` simulates a monitoring device installed in the home connected to
 the mains power supply.
