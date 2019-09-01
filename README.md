@@ -1,3 +1,6 @@
+`nilmtk-device` simulates a monitoring device installed in the home connected to
+the mains power supply.
+
 # Install 
 
 ```
@@ -11,19 +14,23 @@ conda env create -f environment.yml
 `python convert.py`
 
 Convert the data `data/REDD/low_freq` to `data/redd.h5`. This is sample mains
-data. The monitoring device will record and generate this .h5 file data for dissagregating.
+data. The monitoring device will record and generate this .h5 file data for disaggregation.
 
 # Run
 
+## `main.py`
+
 `python main.py`
 
-## Options
+### Options
 
 `-u` update training model before disaggregation.
 
-`python main.py -u`
 
-# Information
+## `simulate.py`
 
-`nilmtk-device` simulates a monitoring device installed in the home connected to
-the mains power supply.
+`python simulate.py`
+
+
+
+

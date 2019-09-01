@@ -1,10 +1,6 @@
 import sys
-sys.path.append('./train')
-import model
 import nilmtk
-from nilmtk import DataSet
-import disaggregate
-from api import send_report
+import utils
 import urllib.request
 
 # to update the model pass -u as an argument when running main.py
@@ -16,7 +12,7 @@ if len(sys.argv) > 1 and sys.argv[1] == '-u':
 # simulate receiving mains data from remote monitoring device
 # by loading dataset and restrict to 1 week
 print('Importing dataset...')
-data = DataSet('data/redd.h5')
+data = nilmtk.DataSet('data/redd.h5')
 print('Importing dataset done.', len(data.buildings), 'buildings')
 
 building = 1
@@ -30,14 +26,14 @@ mains = training_building.mains()
 url = 'https://drive.google.com/uc?authuser=0&id=1xkpI7QQ4jZ1wQJauI0Kn65Q2OeUzL32l&export=download'
 
 if flag_update:
-    url = model.update_model()
+    url = utils.update_model()
 
 print('Model URL', url)
 model_path = 'models/latest_model.pickle'
 urllib.request.urlretrieve(url, model_path)
 
 # use model during disaggregation
-predictions = disaggregate.disaggregate(mains, model_path)
+predictions = utils.disaggregate(mains, model_path)
 
 # Unknown submeter - avg seconds per load
 secondsPerLoadList = []
@@ -77,4 +73,4 @@ for secondsPerLoad in secondsPerLoadList:
         print(reportText)
         reports.append({"reportText": reportText})
 
-send_report(reports[0]["reportText"])
+utils.send_report(reports[0]["reportText"])

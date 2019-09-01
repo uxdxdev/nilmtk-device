@@ -3,3 +3,5 @@ __pycache__
 *.h5
 *.pickle
 *.tmp
+payloads/*
+
