@@ -9,25 +9,21 @@ if len(sys.argv) > 1 and sys.argv[1] == '-u':
     print('Model will be updated')
     flag_update = True
 
-# simulate receiving mains data from remote monitoring device
-# by loading dataset and restrict to 1 week
-print('Importing dataset...')
-data = nilmtk.DataSet('data/redd.h5')
-print('Importing dataset done.', len(data.buildings), 'buildings')
-
-building = 1
-data.set_window(start='2011-04-20', end='2011-04-27')
-training_building = data.buildings[building].elec
+# get building data
+building_data = utils.init(1)
 
 # get mains readings from training building
-mains = training_building.mains()
+mains = building_data.mains()
 
 # download model from remote server
 url = 'https://drive.google.com/uc?authuser=0&id=1xkpI7QQ4jZ1wQJauI0Kn65Q2OeUzL32l&export=download'
 
+# don't use the default model URL, update the model and get new URL
 if flag_update:
+    # update model and get URL
     url = utils.update_model()
 
+# download latest model to models/
 print('Model URL', url)
 model_path = 'models/latest_model.pickle'
 urllib.request.urlretrieve(url, model_path)
@@ -35,7 +31,8 @@ urllib.request.urlretrieve(url, model_path)
 # use model during disaggregation
 predictions = utils.disaggregate(mains, model_path)
 
-# Unknown submeter - avg seconds per load
+# get average number of seconds per load for the first entry in predictions.
+# from testing predictions[0] is the fridge prediction
 secondsPerLoadList = []
 seconds = 0
 preValue = 0
@@ -53,11 +50,10 @@ for currentValue in predictions[0]:
 
     preValue = currentValue
 
-# average number of seconds per load
 avgSecondsPerLoad = sum(secondsPerLoadList) / len(secondsPerLoadList)
-
 print("Appliance load average seconds {:.2f}".format(avgSecondsPerLoad))
 
+# find abnormalities in load by comparing the running time with the average running time
 avgSecondsPerLoadLow = avgSecondsPerLoad * .80
 avgSecondsPerLoadHigh = avgSecondsPerLoad * 1.20
 
@@ -73,4 +69,6 @@ for secondsPerLoad in secondsPerLoadList:
         print(reportText)
         reports.append({"reportText": reportText})
 
-utils.send_report(reports[0]["reportText"])
+# send report to user if abnormalities found
+reportMessage = reports[0]["reportText"]  # report at index 0
+utils.send_report(1234, reportMessage)
