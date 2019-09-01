@@ -17,9 +17,14 @@ def current_milli_time(): return int(round(time.time() * 1000))
 def send_report(deviceId, reportText):
     now = current_milli_time()
 
+    # TODO changes this when running in production
+    deviceSecret = "deviceAGM23nds8xnkdSga"
+
     # send report to API
+    # r = requests.post("http://localhost:3000/api/report",
     r = requests.post("https://nilmtk-service.firebaseapp.com/api/report",
-                      headers={'Content-Type': 'application/json'},
+                      headers={'Content-Type': 'application/json',
+                               'Authorization': 'Bearer ' + deviceSecret},
                       json={'deviceId': deviceId, 'text': reportText, 'date': now})
     print(r.status_code, r.reason)
 
