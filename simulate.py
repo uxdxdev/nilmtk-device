@@ -6,9 +6,9 @@ from datetime import datetime
 
 def check_on_off_states(payload, delaySeconds=0.0, numberOfWarmUpMeasurements=600):
 
-    appliance = payload['appliance']
-    print('checking on/off states for', appliance)
-    load = payload['load']
+    appliance = payload["appliance"]
+    print("checking on/off states for", appliance)
+    load = payload["load"]
 
     averageLoad = 0
     averageOnLoad = 0
@@ -28,11 +28,14 @@ def check_on_off_states(payload, delaySeconds=0.0, numberOfWarmUpMeasurements=60
     applianceRunningTimeStart = 0
     applianceRunningTimeEnd = 0
 
+    switchedOnCount = 0
+    sumOnRunningTime = 0
+
     # after the first numberOfWarmUpMeasurements use the average
     # to check appliance state on/off.
     for entry in load:
 
-        currentLoad = entry['load']
+        currentLoad = entry["load"]
 
         numberOfEntries += 1
         sumLoad += currentLoad
@@ -45,11 +48,19 @@ def check_on_off_states(payload, delaySeconds=0.0, numberOfWarmUpMeasurements=60
 
             # if currentLoad > averageLoad and not isApplianceOn and currentLoad > ghostLoad:
             if not isApplianceOn and currentLoad > ghostLoad:
-                applianceRunningTimeStart = entry['timestamp']
+                switchedOnCount += 1
+                applianceRunningTimeStart = entry["timestamp"]
                 utc_dt = datetime.utcfromtimestamp(applianceRunningTimeStart)
 
-                print(str(utc_dt) + ' ' + appliance + ' is on. Current load ' +
-                      str(currentLoad) + ' previous load ' + str(previousLoad))
+                print(
+                    str(utc_dt)
+                    + " "
+                    + appliance
+                    + " is on. Current load "
+                    + str(currentLoad)
+                    + " previous load "
+                    + str(previousLoad)
+                )
                 isApplianceOn = True
 
                 # utils.send_report(1234, appliance + ' is on.')
@@ -58,31 +69,70 @@ def check_on_off_states(payload, delaySeconds=0.0, numberOfWarmUpMeasurements=60
             if isApplianceOn and currentLoad < ghostLoad:
                 isApplianceOn = False
                 loadSpikeDetected = False
-                applianceRunningTimeEnd = entry['timestamp']
+                applianceRunningTimeEnd = entry["timestamp"]
                 utc_dt = datetime.utcfromtimestamp(applianceRunningTimeEnd)
 
                 runningTime = applianceRunningTimeEnd - applianceRunningTimeStart
-                print(str(utc_dt) + ' ' + appliance + ' is off. Current load ' +
-                      str(currentLoad) + ' previous load ' + str(previousLoad) + ' running time:' + str(runningTime) + ' seconds')
+                print(
+                    str(utc_dt)
+                    + " "
+                    + appliance
+                    + " is off. Current load "
+                    + str(currentLoad)
+                    + " previous load "
+                    + str(previousLoad)
+                    + " running time:"
+                    + str(runningTime)
+                    + " seconds"
+                )
+
+                # running time measurement
+                sumOnRunningTime += runningTime
+                averageOnRunningTime = sumOnRunningTime / switchedOnCount
+
+                # if running time is 50% above the average
+                if runningTime > (averageOnRunningTime * 1.5):
+                    message = (
+                        ">>>> RUNNING TIME SPIKE >>>> "
+                        + str(utc_dt)
+                        + " "
+                        + appliance
+                        + " is on for 50% longer than average "
+                        + str(averageOnRunningTime)
+                    )
+                    print(message)
+                    # utils.send_report(1234, message)
 
             # calculate the average on load and check if current load
             # is above the average
             if isApplianceOn:
                 numberOfOnEntries += 1
+
+                # load measurement
                 sumOnLoad += currentLoad
                 averageOnLoad = sumOnLoad / numberOfOnEntries
 
                 # check for load spikes above the average load
                 if not loadSpikeDetected and currentLoad > (averageOnLoad * 2.0):
                     loadSpikeDetected = True
-                    applianceTimestamp = entry['timestamp']
+                    applianceTimestamp = entry["timestamp"]
                     utc_dt = datetime.utcfromtimestamp(applianceTimestamp)
-                    print('>>>> LOAD SPIKE >>>> ' + str(utc_dt) + ' ' + appliance + ' load of ' + str(currentLoad) +
-                          ' is above average of ' + str(averageOnLoad))
+                    message = (
+                        ">>>> LOAD SPIKE >>>> "
+                        + str(utc_dt)
+                        + " "
+                        + appliance
+                        + " load of "
+                        + str(currentLoad)
+                        + " is above average of "
+                        + str(averageOnLoad)
+                    )
+                    print(message)
+                    # utils.send_report(1234, message)
 
         previousLoad = currentLoad
 
-    print(appliance + ' average load ' + str(averageLoad))
+    print(appliance + " average load " + str(averageLoad))
 
 
 # get building data
@@ -100,7 +150,7 @@ delaySeconds = 0
 # 20 measurements @ ~3 seconds each is ~1 minute of real time.
 # 1200 measurements @ ~3 seconds each is ~1 hour of real time.
 # 28800 measurements @ ~3 seconds each is ~24 hours of real time.
-numberOfWarmUpMeasurements = 0
+numberOfWarmUpMeasurements = 1200
 
 
 # appliance_payload = utils.get_payload_for_appliance(building_data, 'fridge')
@@ -117,14 +167,16 @@ numberOfWarmUpMeasurements = 0
 # check_on_off_states(appliance_payload,
 #                     delaySeconds, numberOfWarmUpMeasurements)
 
-applianceList = ['fridge', 'dish washer', 'microwave', 'light']
+applianceList = ["fridge", "dish washer", "microwave", "light"]
 threadList = []
 for appliance in applianceList:
     appliance_payload = utils.get_payload_for_appliance(
         building_data, appliance)
 
-    thread = Thread(target=check_on_off_states, args=(
-        appliance_payload, delaySeconds, numberOfWarmUpMeasurements, ))
+    thread = Thread(
+        target=check_on_off_states,
+        args=(appliance_payload, delaySeconds, numberOfWarmUpMeasurements),
+    )
     thread.start()
     threadList.append(thread)
 
