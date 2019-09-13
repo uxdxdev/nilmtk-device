@@ -63,7 +63,7 @@ def check_on_off_states(payload, delaySeconds=0.0, numberOfWarmUpMeasurements=60
                 )
                 isApplianceOn = True
 
-                # utils.send_report(1234, appliance + ' is on.')
+                utils.send_report(1234, appliance + ' is on.')
 
             # if currentLoad < averageLoad and isApplianceOn:
             if isApplianceOn and currentLoad < ghostLoad:
@@ -101,7 +101,7 @@ def check_on_off_states(payload, delaySeconds=0.0, numberOfWarmUpMeasurements=60
                         + str(averageOnRunningTime)
                     )
                     print(message)
-                    # utils.send_report(1234, message)
+                    utils.send_report(1234, message, utils.REPORT_TYPE_WARNING)
 
             # calculate the average on load and check if current load
             # is above the average
@@ -128,7 +128,7 @@ def check_on_off_states(payload, delaySeconds=0.0, numberOfWarmUpMeasurements=60
                         + str(averageOnLoad)
                     )
                     print(message)
-                    # utils.send_report(1234, message)
+                    utils.send_report(1234, message, utils.REPORT_TYPE_WARNING)
 
         previousLoad = currentLoad
 
@@ -144,7 +144,7 @@ print(building_data)
 
 # delay between measurements
 # dataset provides real world measurement frequency of 3 to 10 seconds
-delaySeconds = 0
+delaySeconds = 0.01
 # number of measurements to calculate average
 # delaySeconds is not used during average calculation to speed this step up
 # 20 measurements @ ~3 seconds each is ~1 minute of real time.
