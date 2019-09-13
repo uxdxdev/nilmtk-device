@@ -63,11 +63,12 @@ def check_on_off_states(payload, delaySeconds=0.0, numberOfWarmUpMeasurements=60
                 )
                 isApplianceOn = True
 
-                utils.send_report(1234, appliance + ' is on.')
+                utils.send_report(1234, appliance.title() + ' is on.')
 
             # if currentLoad < averageLoad and isApplianceOn:
             if isApplianceOn and currentLoad < ghostLoad:
                 isApplianceOn = False
+
                 loadSpikeDetected = False
                 applianceRunningTimeEnd = entry["timestamp"]
                 utc_dt = datetime.utcfromtimestamp(applianceRunningTimeEnd)
@@ -101,7 +102,10 @@ def check_on_off_states(payload, delaySeconds=0.0, numberOfWarmUpMeasurements=60
                         + str(averageOnRunningTime)
                     )
                     print(message)
-                    utils.send_report(1234, message, utils.REPORT_TYPE_WARNING)
+                    utils.send_report(1234, 'Please check your {}, it has been running for longer than usual.'.format(appliance.title()), utils.REPORT_TYPE_WARNING)
+                
+                utils.send_report(1234, appliance.title() + ' is off.')
+
 
             # calculate the average on load and check if current load
             # is above the average
@@ -128,7 +132,7 @@ def check_on_off_states(payload, delaySeconds=0.0, numberOfWarmUpMeasurements=60
                         + str(averageOnLoad)
                     )
                     print(message)
-                    utils.send_report(1234, message, utils.REPORT_TYPE_WARNING)
+                    utils.send_report(1234, 'Please check your {}, it is using more power than usual.'.format(appliance.title()), utils.REPORT_TYPE_WARNING)
 
         previousLoad = currentLoad
 
@@ -144,7 +148,7 @@ print(building_data)
 
 # delay between measurements
 # dataset provides real world measurement frequency of 3 to 10 seconds
-delaySeconds = 0.01
+delaySeconds = 0.05
 # number of measurements to calculate average
 # delaySeconds is not used during average calculation to speed this step up
 # 20 measurements @ ~3 seconds each is ~1 minute of real time.
@@ -152,20 +156,6 @@ delaySeconds = 0.01
 # 28800 measurements @ ~3 seconds each is ~24 hours of real time.
 numberOfWarmUpMeasurements = 1200
 
-
-# appliance_payload = utils.get_payload_for_appliance(building_data, 'fridge')
-# check_on_off_states(appliance_payload,
-#                     delaySeconds, numberOfWarmUpMeasurements)
-
-# appliance_payload = utils.get_payload_for_appliance(
-#     building_data, 'dish washer')
-# check_on_off_states(appliance_payload,
-#                     delaySeconds, numberOfWarmUpMeasurements)
-
-# appliance_payload = utils.get_payload_for_appliance(
-#     building_data, 'microwave')
-# check_on_off_states(appliance_payload,
-#                     delaySeconds, numberOfWarmUpMeasurements)
 
 applianceList = ["fridge", "dish washer", "microwave", "light"]
 threadList = []

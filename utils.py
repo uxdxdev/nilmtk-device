@@ -10,6 +10,10 @@ from nilmtk.utils import print_dict
 from nilmtk import DataSet
 from nilmtk.dataset_converters import convert_redd
 
+def match_results(submeters, predictions):
+    algorithm = algo.Hart85()
+    return algorithm.best_matched_appliance(submeters, predictions)
+
 
 def current_milli_time(): return int(round(time.time() * 1000))
 
@@ -39,9 +43,9 @@ def convert_data():
     print("Converting data to H5 format complete.")
 
 
-def update_model():
-    print('Updating model...')
-    training_building = init(1)
+def update_model(building_number):
+    print('Updating model on building {}...'.format(building_number))
+    training_building = init(building_number)
     # train the model on the data recieved
     mains = training_building.mains()
     # the remote service will already provide a model, but for this example

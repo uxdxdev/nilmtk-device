@@ -579,6 +579,8 @@ class Hart85(Disaggregator):
             submeters_df,
             left_index=True,
             right_index=True)
+            
+        new_df = new_df.fillna(0)
 
         rmse_all = []
         for pred_appliance in pred_df.columns:

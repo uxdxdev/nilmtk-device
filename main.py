@@ -9,7 +9,11 @@ if len(sys.argv) > 1 and sys.argv[1] == '-u':
     print('Model will be updated')
     flag_update = True
 
-# get building data
+# train algorithm on building number;
+traning_building_number = 1
+ground_truth = utils.init(traning_building_number)
+
+# apply disaggregation to building number;
 building_data = utils.init(1)
 
 # get mains readings from training building
@@ -21,7 +25,7 @@ url = 'https://drive.google.com/uc?authuser=0&id=1xkpI7QQ4jZ1wQJauI0Kn65Q2OeUzL3
 # don't use the default model URL, update the model and get new URL
 if flag_update:
     # update model and get URL
-    url = utils.update_model()
+    url = utils.update_model(traning_building_number)
 
 # download latest model to models/
 print('Model URL', url)
@@ -30,6 +34,10 @@ urllib.request.urlretrieve(url, model_path)
 
 # use model during disaggregation
 predictions = utils.disaggregate(mains, model_path)
+
+# compare the predictions against the ground truth submeters
+submeters = ground_truth.submeters()
+results = utils.match_results(submeters, predictions)
 
 # get average number of seconds per load for the first entry in predictions.
 # from testing predictions[0] is the fridge prediction
@@ -64,11 +72,10 @@ for secondsPerLoad in secondsPerLoadList:
                   avgSecondsPerLoad) * 100
     if precentage > 50 or precentage < -50:
         print("Load is +/-50% of average at {} seconds".format(secondsPerLoad))
-        reportText = "abnormal load detected: average {:.2f} precentage {:.2f}% duration {:.2f}".format(
-            avgSecondsPerLoad, precentage, secondsPerLoad)
-        print(reportText)
-        reports.append({"reportText": reportText})
+        print("abnormal load detected: average {:.2f} precentage {:.2f}% duration {:.2f}".format(
+            avgSecondsPerLoad, precentage, secondsPerLoad))
+        reports.append({"reportText": "Please check your appliances. An appliance has been running for longer than usual."})
 
 # send report to user if abnormalities found
 reportMessage = reports[0]["reportText"]  # report at index 0
-utils.send_report(1234, reportMessage)
+utils.send_report(1234, reportMessage, utils.REPORT_TYPE_WARNING)
