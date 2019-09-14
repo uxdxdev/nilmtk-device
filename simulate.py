@@ -1,25 +1,24 @@
+import os
 import utils
 from threading import Thread
 from dotenv import load_dotenv
 load_dotenv()
 
-# get building data
-building_data = utils.init(1)
-
-# output appliances in building_data
-print(building_data)
-
 
 # delay between measurements
 # dataset provides real world measurement frequency of 3 to 10 seconds
-delaySeconds = 0.0
-# number of measurements to calculate average
-# delaySeconds is not used during average calculation to speed this step up
-# 20 measurements @ ~3 seconds each is ~1 minute of real time.
-# 1200 measurements @ ~3 seconds each is ~1 hour of real time.
-# 28800 measurements @ ~3 seconds each is ~24 hours of real time.
-numberOfWarmUpMeasurements = 1200
+DELAY_IN_MEASUREMENT_FREQUENCY = os.getenv("DELAY_IN_MEASUREMENT_FREQUENCY")
 
+# set the timeframe for the building data
+start = '2011-04-25'
+end = '2011-04-26'
+
+# get building data
+building_number = 1
+building_data = utils.init(building_number, start, end)
+
+# output appliances in building_data
+print(building_data)
 
 applianceList = ["fridge", "dish washer", "microwave", "light"]
 threadList = []
@@ -29,7 +28,7 @@ for appliance in applianceList:
 
     thread = Thread(
         target=utils.check_on_off_states,
-        args=(appliance_payload, delaySeconds, numberOfWarmUpMeasurements),
+        args=(appliance_payload, DELAY_IN_MEASUREMENT_FREQUENCY),
     )
     thread.start()
     threadList.append(thread)

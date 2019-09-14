@@ -12,7 +12,9 @@ from datetime import datetime
 import os
 
 
-def check_on_off_states(payload, delaySeconds=0.0, numberOfWarmUpMeasurements=600):
+def check_on_off_states(payload, delaySeconds=0.0):
+
+    DEVICE_ID = os.getenv("DEVICE_ID")
 
     appliance = payload["appliance"]
     print("checking on/off states for", appliance)
@@ -47,7 +49,7 @@ def check_on_off_states(payload, delaySeconds=0.0, numberOfWarmUpMeasurements=60
         currentLoad = entry["load"]
 
         # measurement read frequency
-        time.sleep(delaySeconds)
+        time.sleep(float(delaySeconds))
 
         if not isApplianceOn and currentLoad > ghostLoad:
             switchedOnCount += 1
@@ -65,7 +67,7 @@ def check_on_off_states(payload, delaySeconds=0.0, numberOfWarmUpMeasurements=60
             )
             isApplianceOn = True
 
-            send_report(1234, 'Appliance ' +
+            send_report(DEVICE_ID, 'Appliance ' +
                         str(appliance).title() + ' is on.')
 
         # if currentLoad < averageLoad and isApplianceOn:
@@ -105,10 +107,10 @@ def check_on_off_states(payload, delaySeconds=0.0, numberOfWarmUpMeasurements=60
                     + str(averageOnRunningTime)
                 )
                 print(message)
-                send_report(1234, 'Please check your appliance {}, it has been running for longer than usual.'.format(
+                send_report(DEVICE_ID, 'Please check your appliance {}, it has been running for longer than usual.'.format(
                     str(appliance).title()), REPORT_TYPE_WARNING)
 
-            send_report(1234, 'Appliance ' +
+            send_report(DEVICE_ID, 'Appliance ' +
                         str(appliance).title() + ' is off.')
 
         # calculate the average on load and check if current load
@@ -136,7 +138,7 @@ def check_on_off_states(payload, delaySeconds=0.0, numberOfWarmUpMeasurements=60
                     + str(averageOnLoad)
                 )
                 print(message)
-                send_report(1234, 'Please check your appliance {}, it is using more power than usual.'.format(
+                send_report(DEVICE_ID, 'Please check your appliance {}, it is using more power than usual.'.format(
                     str(appliance).title()), REPORT_TYPE_WARNING)
 
         previousLoad = currentLoad
@@ -180,9 +182,7 @@ def convert_data():
     print("Converting data to H5 format complete.")
 
 
-def update_model(building_number):
-    print('Updating model on building {}...'.format(building_number))
-    training_building = init(building_number)
+def update_model(training_building):
     # train the model on the data recieved
     mains = training_building.mains()
     # the remote service will already provide a model, but for this example
@@ -238,12 +238,19 @@ def disaggregate(mains, path):
     return predictions
 
 
-def init(building_number):
+def init(building_number, start='2011-04-25', end='2011-04-26'):
     print('Importing dataset...')
     data_set = nilmtk.DataSet('data/redd.h5')
+
     print('Importing dataset done.', len(data_set.buildings), 'buildings')
-    data_set.set_window(start='2011-04-25', end='2011-04-26')
     building_data = data_set.buildings[building_number].elec
+
+    print('Full timeframe for data', building_data.get_timeframe())
+
+    data_set.set_window(start=start, end=end)
+
+    print('Timeframe set for data', building_data.get_timeframe())
+
     return building_data
 
 
