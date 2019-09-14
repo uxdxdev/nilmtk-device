@@ -6,8 +6,6 @@ from threading import Thread
 from dotenv import load_dotenv
 load_dotenv()
 
-DELAY_IN_MEASUREMENT_FREQUENCY = os.getenv("DELAY_IN_MEASUREMENT_FREQUENCY")
-
 # to update the model pass -u as an argument when running main.py
 flag_update = False
 if len(sys.argv) > 1 and sys.argv[1] == '-u':
@@ -51,13 +49,24 @@ print(utils.match_results(ground_truth_data.submeters(), predictions))
 
 applianceList = [0, 1, 2]
 threadList = []
-for appliance in applianceList:
-    appliance_payload = utils.get_payload_for_unknown_appliance(
-        predictions, appliance)
 
+
+def get_payload_and_analyse(building_data, appliance):
+    # get payload for unknown appliance
+    appliance_payload = utils.get_payload_for_unknown_appliance(
+        building_data, appliance)
+
+    DELAY_IN_MEASUREMENT_FREQUENCY = os.getenv(
+        "DELAY_IN_MEASUREMENT_FREQUENCY")
+
+    utils.analyse_payload(
+        appliance_payload, DELAY_IN_MEASUREMENT_FREQUENCY)
+
+
+for appliance in applianceList:
     thread = Thread(
-        target=utils.check_on_off_states,
-        args=(appliance_payload, DELAY_IN_MEASUREMENT_FREQUENCY),
+        target=get_payload_and_analyse,
+        args=(predictions, appliance),
     )
     thread.start()
     threadList.append(thread)

@@ -12,12 +12,12 @@ from datetime import datetime
 import os
 
 
-def check_on_off_states(payload, delaySeconds=0.0):
+def analyse_payload(payload, delaySeconds=0.0):
 
     DEVICE_ID = os.getenv("DEVICE_ID")
 
     appliance = payload["appliance"]
-    print("checking on/off states for", appliance)
+    print("Analysing payload for ", appliance)
     load = payload["load"]
 
     averageOnLoad = 0
