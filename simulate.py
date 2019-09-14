@@ -9,9 +9,10 @@ load_dotenv()
 # dataset provides real world measurement frequency of 3 to 10 seconds
 DELAY_IN_MEASUREMENT_FREQUENCY = os.getenv("DELAY_IN_MEASUREMENT_FREQUENCY")
 
-# set the timeframe for the building data
-start = '2011-04-25'
-end = '2011-04-26'
+# set the timeframe for analysis
+# full timeframe for REDD data start='2011-04-18 09:22:09-04:00', end='2011-05-24 15:57:02-04:00'
+start = '2011-04-20'
+end = '2011-04-24'
 
 # get building data
 building_number = 1
