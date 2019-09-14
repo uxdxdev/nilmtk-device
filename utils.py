@@ -100,7 +100,7 @@ def check_on_off_states(payload, delaySeconds=0.0, numberOfWarmUpMeasurements=60
                     ">>>> RUNNING TIME SPIKE >>>> "
                     + str(utc_dt)
                     + " "
-                    + appliance
+                    + str(appliance)
                     + " is on for 50% longer than average "
                     + str(averageOnRunningTime)
                 )
