@@ -9,6 +9,7 @@ from nilmtk.utils import print_dict
 from nilmtk import DataSet
 from nilmtk.dataset_converters import convert_redd
 from datetime import datetime
+import os
 
 
 def check_on_off_states(payload, delaySeconds=0.0, numberOfWarmUpMeasurements=600):
@@ -17,11 +18,8 @@ def check_on_off_states(payload, delaySeconds=0.0, numberOfWarmUpMeasurements=60
     print("checking on/off states for", appliance)
     load = payload["load"]
 
-    averageLoad = 0
     averageOnLoad = 0
-    sumLoad = 0
     sumOnLoad = 0
-    numberOfEntries = 0
     numberOfOnEntries = 0
     previousLoad = 0
     isApplianceOn = False
@@ -39,115 +37,109 @@ def check_on_off_states(payload, delaySeconds=0.0, numberOfWarmUpMeasurements=60
     sumOnRunningTime = 0
 
     # each entry contains the current load of an appliance at a timestamp
-    # we simulate taking a measurement at "delaySeconds" frequency and 
+    # we simulate taking a measurement at "delaySeconds" frequency and
     # calculating stats based on the appliance energy usage behaviour.
-    # 
-    # the input to this algorithm is appliance level power usage 
+    #
+    # the input to this algorithm is appliance level power usage
     # post disaggregation.
     for entry in load:
 
         currentLoad = entry["load"]
 
-        numberOfEntries += 1
-        sumLoad += currentLoad
-        averageLoad = sumLoad / numberOfEntries
+        # measurement read frequency
+        time.sleep(delaySeconds)
 
-        # only check appliance state when the average load is calculated
-        if numberOfEntries > numberOfWarmUpMeasurements:
-            # measurement read frequency
-            time.sleep(delaySeconds)
+        if not isApplianceOn and currentLoad > ghostLoad:
+            switchedOnCount += 1
+            applianceRunningTimeStart = entry["timestamp"]
+            utc_dt = datetime.utcfromtimestamp(applianceRunningTimeStart)
 
-            # if currentLoad > averageLoad and not isApplianceOn and currentLoad > ghostLoad:
-            if not isApplianceOn and currentLoad > ghostLoad:
-                switchedOnCount += 1
-                applianceRunningTimeStart = entry["timestamp"]
-                utc_dt = datetime.utcfromtimestamp(applianceRunningTimeStart)
+            print(
+                str(utc_dt)
+                + " "
+                + str(appliance)
+                + " is on. Current load "
+                + str(currentLoad)
+                + " previous load "
+                + str(previousLoad)
+            )
+            isApplianceOn = True
 
-                print(
-                    str(utc_dt)
+            send_report(1234, 'Appliance ' +
+                        str(appliance).title() + ' is on.')
+
+        # if currentLoad < averageLoad and isApplianceOn:
+        if isApplianceOn and currentLoad < ghostLoad:
+            isApplianceOn = False
+
+            loadSpikeDetected = False
+            applianceRunningTimeEnd = entry["timestamp"]
+            utc_dt = datetime.utcfromtimestamp(applianceRunningTimeEnd)
+
+            runningTime = applianceRunningTimeEnd - applianceRunningTimeStart
+            print(
+                str(utc_dt)
+                + " "
+                + str(appliance)
+                + " is off. Current load "
+                + str(currentLoad)
+                + " previous load "
+                + str(previousLoad)
+                + " running time:"
+                + str(runningTime)
+                + " seconds"
+            )
+
+            # running time measurement
+            sumOnRunningTime += runningTime
+            averageOnRunningTime = sumOnRunningTime / switchedOnCount
+
+            # if running time is 50% above the average
+            if runningTime > (averageOnRunningTime * 1.5):
+                message = (
+                    ">>>> RUNNING TIME SPIKE >>>> "
+                    + str(utc_dt)
                     + " "
                     + appliance
-                    + " is on. Current load "
-                    + str(currentLoad)
-                    + " previous load "
-                    + str(previousLoad)
+                    + " is on for 50% longer than average "
+                    + str(averageOnRunningTime)
                 )
-                isApplianceOn = True
+                print(message)
+                send_report(1234, 'Please check your appliance {}, it has been running for longer than usual.'.format(
+                    str(appliance).title()), REPORT_TYPE_WARNING)
 
-                send_report(1234, appliance.title() + ' is on.')
+            send_report(1234, 'Appliance ' +
+                        str(appliance).title() + ' is off.')
 
-            # if currentLoad < averageLoad and isApplianceOn:
-            if isApplianceOn and currentLoad < ghostLoad:
-                isApplianceOn = False
+        # calculate the average on load and check if current load
+        # is above the average
+        if isApplianceOn:
+            numberOfOnEntries += 1
 
-                loadSpikeDetected = False
-                applianceRunningTimeEnd = entry["timestamp"]
-                utc_dt = datetime.utcfromtimestamp(applianceRunningTimeEnd)
+            # load measurement
+            sumOnLoad += currentLoad
+            averageOnLoad = sumOnLoad / numberOfOnEntries
 
-                runningTime = applianceRunningTimeEnd - applianceRunningTimeStart
-                print(
-                    str(utc_dt)
+            # check for load spikes above the average load
+            if not loadSpikeDetected and currentLoad > (averageOnLoad * 2.0):
+                loadSpikeDetected = True
+                applianceTimestamp = entry["timestamp"]
+                utc_dt = datetime.utcfromtimestamp(applianceTimestamp)
+                message = (
+                    ">>>> LOAD SPIKE >>>> "
+                    + str(utc_dt)
                     + " "
-                    + appliance
-                    + " is off. Current load "
+                    + str(appliance)
+                    + " load of "
                     + str(currentLoad)
-                    + " previous load "
-                    + str(previousLoad)
-                    + " running time:"
-                    + str(runningTime)
-                    + " seconds"
+                    + " is above average of "
+                    + str(averageOnLoad)
                 )
-
-                # running time measurement
-                sumOnRunningTime += runningTime
-                averageOnRunningTime = sumOnRunningTime / switchedOnCount
-
-                # if running time is 50% above the average
-                if runningTime > (averageOnRunningTime * 1.5):
-                    message = (
-                        ">>>> RUNNING TIME SPIKE >>>> "
-                        + str(utc_dt)
-                        + " "
-                        + appliance
-                        + " is on for 50% longer than average "
-                        + str(averageOnRunningTime)
-                    )
-                    print(message)
-                    send_report(1234, 'Please check your {}, it has been running for longer than usual.'.format(appliance.title()), REPORT_TYPE_WARNING)
-                
-                send_report(1234, appliance.title() + ' is off.')
-
-
-            # calculate the average on load and check if current load
-            # is above the average
-            if isApplianceOn:
-                numberOfOnEntries += 1
-
-                # load measurement
-                sumOnLoad += currentLoad
-                averageOnLoad = sumOnLoad / numberOfOnEntries
-
-                # check for load spikes above the average load
-                if not loadSpikeDetected and currentLoad > (averageOnLoad * 2.0):
-                    loadSpikeDetected = True
-                    applianceTimestamp = entry["timestamp"]
-                    utc_dt = datetime.utcfromtimestamp(applianceTimestamp)
-                    message = (
-                        ">>>> LOAD SPIKE >>>> "
-                        + str(utc_dt)
-                        + " "
-                        + appliance
-                        + " load of "
-                        + str(currentLoad)
-                        + " is above average of "
-                        + str(averageOnLoad)
-                    )
-                    print(message)
-                    send_report(1234, 'Please check your {}, it is using more power than usual.'.format(appliance.title()), REPORT_TYPE_WARNING)
+                print(message)
+                send_report(1234, 'Please check your appliance {}, it is using more power than usual.'.format(
+                    str(appliance).title()), REPORT_TYPE_WARNING)
 
         previousLoad = currentLoad
-
-    print(appliance + " average load " + str(averageLoad))
 
 
 def match_results(submeters, predictions):
@@ -155,25 +147,30 @@ def match_results(submeters, predictions):
     return algorithm.best_matched_appliance(submeters, predictions)
 
 
-def current_milli_time(): return int(round(time.time() * 1000))
+def current_milli_time():
+    return int(round(time.time() * 1000))
+
 
 REPORT_TYPE_INFO = 'info'
 REPORT_TYPE_WARNING = 'warning'
 
 
 def send_report(deviceId, reportText, reportType='info'):
+    RUNTIME_ENV = os.getenv("RUNTIME_ENV")
+
     now = current_milli_time()
 
     # TODO changes this when running in production
     deviceSecret = "deviceAGM23nds8xnkdSga"
 
-    # send report to API
-    r = requests.post("http://localhost:3000/api/report",
-    # r = requests.post("https://nilmtk-service.firebaseapp.com/api/report",
-                      headers={'Content-Type': 'application/json',
-                               'Authorization': 'Bearer ' + deviceSecret},
-                      json={'deviceId': deviceId, 'reportType': reportType, 'text': reportText, 'date': now})
-    print(r.status_code, r.reason)
+    if RUNTIME_ENV != 'testing':
+        # send report to API
+        r = requests.post("http://localhost:3000/api/report",
+                          # r = requests.post("https://nilmtk-service.firebaseapp.com/api/report",
+                          headers={'Content-Type': 'application/json',
+                                   'Authorization': 'Bearer ' + deviceSecret},
+                          json={'deviceId': deviceId, 'reportType': reportType, 'text': reportText, 'date': now})
+        print(r.status_code, r.reason)
 
 
 def convert_data():
@@ -280,13 +277,28 @@ def get_payload_for_appliance(building_data, appliance):
     df_appliance = next(building_data[appliance, 1].load())
 
     timestamp, load = [], []
-    for datetime, j in df_appliance.iterrows():
-        timestamp.append(timestamp_to_milliseconds(datetime))
+    for timestamp_datetime, j in df_appliance.iterrows():
+        timestamp.append(timestamp_to_milliseconds(timestamp_datetime))
 
     for value in df_appliance['power', 'active']:
         load.append(value)
 
     payload = {'appliance': appliance, 'load': []}
+    payload['load'] = [{'timestamp': t, 'load': l}
+                       for t, l in zip(timestamp, load)]
+
+    return payload
+
+
+def get_payload_for_unknown_appliance(predictions, appliance_index):
+    print('getting payload for', appliance_index)
+
+    timestamp, load = [], []
+    for timestamp_datetime, value in predictions[appliance_index].iteritems():
+        load.append(value)
+        timestamp.append(timestamp_to_milliseconds(timestamp_datetime))
+
+    payload = {'appliance': appliance_index, 'load': []}
     payload['load'] = [{'timestamp': t, 'load': l}
                        for t, l in zip(timestamp, load)]
 

@@ -1,7 +1,9 @@
 import sys
-import nilmtk
 import utils
 import urllib.request
+from threading import Thread
+from dotenv import load_dotenv
+load_dotenv()
 
 # to update the model pass -u as an argument when running main.py
 flag_update = False
@@ -35,47 +37,29 @@ urllib.request.urlretrieve(url, model_path)
 # use model during disaggregation
 predictions = utils.disaggregate(mains, model_path)
 
-# compare the predictions against the ground truth submeters
-submeters = ground_truth.submeters()
-results = utils.match_results(submeters, predictions)
+# delay between measurements
+# dataset provides real world measurement frequency of 3 to 10 seconds
+delaySeconds = 0.05
+# number of measurements to calculate average
+# delaySeconds is not used during average calculation to speed this step up
+# 20 measurements @ ~3 seconds each is ~1 minute of real time.
+# 1200 measurements @ ~3 seconds each is ~1 hour of real time.
+# 28800 measurements @ ~3 seconds each is ~24 hours of real time.
+numberOfWarmUpMeasurements = 1200
 
-# get average number of seconds per load for the first entry in predictions.
-# from testing predictions[0] is the fridge prediction
-secondsPerLoadList = []
-seconds = 0
-preValue = 0
-for currentValue in predictions[0]:
-    if(currentValue > 10):
-        # in load
-        seconds = seconds + 1
+applianceList = [0, 1, 2]
+threadList = []
+for appliance in applianceList:
+    appliance_payload = utils.get_payload_for_unknown_appliance(
+        predictions, appliance)
 
-    if(preValue > 10 and preValue > currentValue):
-        secondsPerLoadList.append(seconds)
+    thread = Thread(
+        target=utils.check_on_off_states,
+        args=(appliance_payload, delaySeconds, numberOfWarmUpMeasurements),
+    )
+    thread.start()
+    threadList.append(thread)
 
-    if(currentValue < 10):
-        # out of load
-        seconds = 0
-
-    preValue = currentValue
-
-avgSecondsPerLoad = sum(secondsPerLoadList) / len(secondsPerLoadList)
-print("Appliance load average seconds {:.2f}".format(avgSecondsPerLoad))
-
-# find abnormalities in load by comparing the running time with the average running time
-avgSecondsPerLoadLow = avgSecondsPerLoad * .80
-avgSecondsPerLoadHigh = avgSecondsPerLoad * 1.20
-
-reports = []
-
-for secondsPerLoad in secondsPerLoadList:
-    precentage = ((secondsPerLoad - avgSecondsPerLoad) /
-                  avgSecondsPerLoad) * 100
-    if precentage > 50 or precentage < -50:
-        print("Load is +/-50% of average at {} seconds".format(secondsPerLoad))
-        print("abnormal load detected: average {:.2f} precentage {:.2f}% duration {:.2f}".format(
-            avgSecondsPerLoad, precentage, secondsPerLoad))
-        reports.append({"reportText": "Please check your appliances. An appliance has been running for longer than usual."})
-
-# send report to user if abnormalities found
-reportMessage = reports[0]["reportText"]  # report at index 0
-utils.send_report(1234, reportMessage, utils.REPORT_TYPE_WARNING)
+for threadObject in threadList:
+    thread.join()
+    print("thread finished...exiting")

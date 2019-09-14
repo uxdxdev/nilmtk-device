@@ -1,5 +1,7 @@
 import utils
 from threading import Thread
+from dotenv import load_dotenv
+load_dotenv()
 
 # get building data
 building_data = utils.init(1)
@@ -10,7 +12,7 @@ print(building_data)
 
 # delay between measurements
 # dataset provides real world measurement frequency of 3 to 10 seconds
-delaySeconds = 0.05
+delaySeconds = 0.0
 # number of measurements to calculate average
 # delaySeconds is not used during average calculation to speed this step up
 # 20 measurements @ ~3 seconds each is ~1 minute of real time.
