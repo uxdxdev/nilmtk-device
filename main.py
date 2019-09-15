@@ -1,4 +1,5 @@
 import os
+import argparse
 import sys
 import utils
 import urllib.request
@@ -8,11 +9,21 @@ load_dotenv()
 
 
 def main():
-    # to update the model pass -u as an argument when running main.py
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("id", help="Device ID")
+    parser.add_argument(
+        "--update", help="Update the disaggregation model", action="store_true")
+    args = parser.parse_args()
+
     flag_update = False
-    if len(sys.argv) > 1 and sys.argv[1] == '-u':
-        print('Model will be updated')
+    if args.update:
         flag_update = True
+
+    # default device id
+    deviceId = 1234
+    if args.id:
+        deviceId = args.id
 
     # set the timeframe for analysis
     # full timeframe for REDD data start='2011-04-18 09:22:09-04:00', end='2011-05-24 15:57:02-04:00'
@@ -63,8 +74,8 @@ def main():
         DELAY_IN_MEASUREMENT_FREQUENCY = os.getenv(
             "DELAY_IN_MEASUREMENT_FREQUENCY")
 
-        utils.analyse_payload(
-            appliance_payload, DELAY_IN_MEASUREMENT_FREQUENCY)
+        utils.analyse_payload(deviceId,
+                              appliance_payload, DELAY_IN_MEASUREMENT_FREQUENCY)
 
     for appliance in applianceList:
         thread = Thread(

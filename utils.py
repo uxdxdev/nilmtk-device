@@ -12,9 +12,7 @@ from datetime import datetime
 import os
 
 
-def analyse_payload(payload, delaySeconds=0.0):
-
-    DEVICE_ID = os.getenv("DEVICE_ID")
+def analyse_payload(deviceId, payload, delaySeconds=0.0):
 
     appliance = payload["appliance"]
     print("Analysing payload for ", appliance)
@@ -67,7 +65,7 @@ def analyse_payload(payload, delaySeconds=0.0):
             )
             isApplianceOn = True
 
-            send_report(DEVICE_ID, 'Appliance ' +
+            send_report(deviceId, 'Appliance ' +
                         str(appliance).title() + ' is on.')
 
         # if currentLoad < averageLoad and isApplianceOn:
@@ -107,10 +105,10 @@ def analyse_payload(payload, delaySeconds=0.0):
                     + str(averageOnRunningTime)
                 )
                 print(message)
-                send_report(DEVICE_ID, 'Please check your appliance {}, it has been running for longer than usual.'.format(
+                send_report(deviceId, 'Please check your appliance {}, it has been running for longer than usual.'.format(
                     str(appliance).title()), REPORT_TYPE_WARNING)
 
-            send_report(DEVICE_ID, 'Appliance ' +
+            send_report(deviceId, 'Appliance ' +
                         str(appliance).title() + ' is off.')
 
         # calculate the average on load and check if current load
@@ -138,7 +136,7 @@ def analyse_payload(payload, delaySeconds=0.0):
                     + str(averageOnLoad)
                 )
                 print(message)
-                send_report(DEVICE_ID, 'Please check your appliance {}, it is using more power than usual.'.format(
+                send_report(deviceId, 'Please check your appliance {}, it is using more power than usual.'.format(
                     str(appliance).title()), REPORT_TYPE_WARNING)
 
         previousLoad = currentLoad

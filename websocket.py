@@ -1,17 +1,14 @@
 import main
 import simulate
 import json
-import os
 import asyncio
 import websockets
 from dotenv import load_dotenv
 load_dotenv()
 
-DEVICE_ID = os.getenv("DEVICE_ID")
-
 
 async def connect():
-    uri = "ws://connect.websocket.in/consumo?room_id=" + DEVICE_ID
+    uri = "ws://connect.websocket.in/consumo?room_id=" + 1234
     async with websockets.connect(uri) as websocket:
         while True:
             print('waiting for messages...')

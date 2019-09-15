@@ -1,3 +1,4 @@
+import argparse
 import os
 import utils
 from threading import Thread
@@ -6,6 +7,15 @@ load_dotenv()
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("id", help="Device ID")
+    args = parser.parse_args()
+
+    # default device id
+    deviceId = 1234
+    if args.id:
+        deviceId = args.id
+
     # set the timeframe for analysis
     # full timeframe for REDD data start='2011-04-18 09:22:09-04:00', end='2011-05-24 15:57:02-04:00'
     # start = '2011-04-20'
@@ -32,8 +42,8 @@ def main():
         DELAY_IN_MEASUREMENT_FREQUENCY = os.getenv(
             "DELAY_IN_MEASUREMENT_FREQUENCY")
 
-        utils.analyse_payload(
-            appliance_payload, DELAY_IN_MEASUREMENT_FREQUENCY)
+        utils.analyse_payload(deviceId,
+                              appliance_payload, DELAY_IN_MEASUREMENT_FREQUENCY)
 
     for appliance in applianceList:
         thread = Thread(
