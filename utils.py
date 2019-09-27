@@ -50,6 +50,7 @@ def analyse_payload(deviceId, payload, delaySeconds=0.0):
         time.sleep(float(delaySeconds))
 
         if not isApplianceOn and currentLoad > ghostLoad:
+            isApplianceOn = True
             switchedOnCount += 1
             applianceRunningTimeStart = entry["timestamp"]
             utc_dt = datetime.utcfromtimestamp(applianceRunningTimeStart)
@@ -63,10 +64,9 @@ def analyse_payload(deviceId, payload, delaySeconds=0.0):
                 + " previous load "
                 + str(previousLoad)
             )
-            isApplianceOn = True
 
             send_report(deviceId, 'Appliance ' +
-                        str(appliance).title() + ' is on.')
+                        str(appliance).title() + ' is on.', appliance=str(appliance).title())
 
         # if currentLoad < averageLoad and isApplianceOn:
         if isApplianceOn and currentLoad < ghostLoad:
@@ -106,7 +106,7 @@ def analyse_payload(deviceId, payload, delaySeconds=0.0):
                 )
                 print(message)
                 send_report(deviceId, 'Please check your appliance {}, it has been running for longer than usual.'.format(
-                    str(appliance).title()), REPORT_TYPE_WARNING)
+                    str(appliance).title()), reportType=REPORT_TYPE_WARNING)
 
             send_report(deviceId, 'Appliance ' +
                         str(appliance).title() + ' is off.')
@@ -137,7 +137,7 @@ def analyse_payload(deviceId, payload, delaySeconds=0.0):
                 )
                 print(message)
                 send_report(deviceId, 'Please check your appliance {}, it is using more power than usual.'.format(
-                    str(appliance).title()), REPORT_TYPE_WARNING)
+                    str(appliance).title()), reportType=REPORT_TYPE_WARNING)
 
         previousLoad = currentLoad
 
@@ -155,12 +155,12 @@ REPORT_TYPE_INFO = 'info'
 REPORT_TYPE_WARNING = 'warning'
 
 
-def send_report(deviceId, reportText, reportType='info'):
+def send_report(deviceId, reportText, reportType='info', appliance=''):
     RUNTIME_ENV = os.getenv("RUNTIME_ENV")
 
     now = current_milli_time()
 
-    # TODO changes this when running in production
+    # TODO change this when running in production
     deviceSecret = "deviceAGM23nds8xnkdSga"
 
     if RUNTIME_ENV != 'testing':
@@ -169,7 +169,7 @@ def send_report(deviceId, reportText, reportType='info'):
                           # r = requests.post("https://nilmtk-service.firebaseapp.com/api/report",
                           headers={'Content-Type': 'application/json',
                                    'Authorization': 'Bearer ' + deviceSecret},
-                          json={'deviceId': deviceId, 'reportType': reportType, 'text': reportText, 'date': now})
+                          json={'deviceId': deviceId, 'applianceId': appliance, 'reportType': reportType, 'text': reportText, 'date': now})
         print(r.status_code, r.reason)
 
 
