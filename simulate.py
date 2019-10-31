@@ -31,13 +31,14 @@ def main():
     # output appliances in building_data
     print(building_data)
 
-    applianceList = ["fridge", "dish washer", "microwave", "light"]
+    applianceList = [("fridge", 1), ("dish washer", 1),
+                     ("microwave", 1), ("light", 1), ("light", 2), ("light", 3), ("sockets", 2)]
     threadList = []
 
-    def get_payload_and_analyse(building_data, appliance):
+    def get_payload_and_analyse(building_data, appliance, id):
         # get payload for known appliance
         appliance_payload = utils.get_payload_for_appliance(
-            building_data, appliance)
+            building_data, appliance, id)
 
         DELAY_IN_MEASUREMENT_FREQUENCY = os.getenv(
             "DELAY_IN_MEASUREMENT_FREQUENCY")
@@ -45,10 +46,10 @@ def main():
         utils.analyse_payload(deviceId,
                               appliance_payload, DELAY_IN_MEASUREMENT_FREQUENCY)
 
-    for appliance in applianceList:
+    for (name, id) in applianceList:
         thread = Thread(
             target=get_payload_and_analyse,
-            args=(building_data, appliance),
+            args=(building_data, name, id),
         )
         thread.start()
         threadList.append(thread)
