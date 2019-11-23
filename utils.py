@@ -15,6 +15,11 @@ import os
 REPORT_TYPE_INFO = 'info'
 REPORT_TYPE_WARNING = 'warning'
 
+HOSTNAME_DEV = 'http://localhost:3000'
+HOSTNAME_PROD = 'https://nilmtk-service.firebaseapp.com'
+
+HOSTNAME = HOSTNAME_DEV if os.getenv("RUNTIME_ENV") == 'development' else HOSTNAME_PROD
+
 
 def match_results(submeters, predictions):
     algorithm = algo.Hart85()
@@ -35,8 +40,7 @@ def send_report(deviceId, reportText, reportType='info', appliance=''):
 
     if RUNTIME_ENV != 'testing':
         # send report to API
-        r = requests.post("http://localhost:3000/api/report",
-                          # r = requests.post("https://nilmtk-service.firebaseapp.com/api/report",
+        r = requests.post(HOSTNAME + "/api/report",
                           headers={'Content-Type': 'application/json',
                                    'Authorization': 'Bearer ' + deviceSecret},
                           json={'deviceId': deviceId, 'applianceId': appliance, 'reportType': reportType, 'text': reportText, 'date': now})
@@ -49,8 +53,7 @@ def send_report_summary(summary):
     deviceSecret = "deviceAGM23nds8xnkdSga"
 
     if RUNTIME_ENV != 'testing':
-        # r = requests.post("http://localhost:3000/api/summary",
-        r = requests.post("https://nilmtk-service.firebaseapp.com/api/summary",
+        r = requests.post(HOSTNAME + "/api/summary",
                           headers={'Content-Type': 'application/json',
                                    'Authorization': 'Bearer ' + deviceSecret},
                           json={'summary': summary})

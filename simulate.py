@@ -9,8 +9,9 @@ load_dotenv()
 
 
 def analyse(deviceId, appliance_payload):
-    DELAY_IN_MEASUREMENT_FREQUENCY = os.getenv(
-        "DELAY_IN_MEASUREMENT_FREQUENCY")
+    DELAY_IN_MEASUREMENT_FREQUENCY_HISTORICAL_SAMPLING = os.getenv("DELAY_IN_MEASUREMENT_FREQUENCY_HISTORICAL_SAMPLING")
+
+    DELAY_IN_MEASUREMENT_FREQUENCY_REALTIME_SAMPLING = os.getenv("DELAY_IN_MEASUREMENT_FREQUENCY_REALTIME_SAMPLING")
 
     appliance = appliance_payload["appliance"]
     load = appliance_payload["load"]
@@ -29,8 +30,15 @@ def analyse(deviceId, appliance_payload):
     testData.append({'date': '2011-04-26', 'timestamp': 1303776000, 'load': 0})
 
     # import historical data
-    ecoPushMonitoringSystem.import_historical_data(trainingData)
+    for entry in trainingData:
+        currentLoad = entry["load"]
+        timestamp = entry["timestamp"]
 
+        # delay processing to minimize number requests to cloud API to conserve quota
+        time.sleep(float(DELAY_IN_MEASUREMENT_FREQUENCY_HISTORICAL_SAMPLING))
+
+        ecoPushMonitoringSystem.import_historical_data(currentLoad=currentLoad, timestamp=timestamp)
+    
     # analyse data for test date, each entry is read and passed to the
     # monitoring system with a delay to simulate real-time power signal sampling
     for entry in testData:
@@ -38,7 +46,7 @@ def analyse(deviceId, appliance_payload):
         timestamp = entry["timestamp"]
 
         # delay processing to simulate real-time sampling speed
-        time.sleep(float(DELAY_IN_MEASUREMENT_FREQUENCY))
+        time.sleep(float(DELAY_IN_MEASUREMENT_FREQUENCY_REALTIME_SAMPLING))
 
         # analyse data
         ecoPushMonitoringSystem.analyse_data(currentLoad=currentLoad, timestamp=timestamp)  
@@ -69,7 +77,8 @@ def main():
     # output appliances in building_data
     # print(building_data)
 
-    applianceList = [("fridge", 1), ("dish washer", 1), ("microwave", 1), ("light", 1), ("light", 2), ("light", 3), ("sockets", 2)]
+    applianceList = [("fridge", 1)]
+    # , ("dish washer", 1), ("microwave", 1), ("light", 1), ("light", 2), ("light", 3), ("sockets", 2)]
 
     # get appliance payload from building data
     payloadsForAnalysis = []

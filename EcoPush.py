@@ -25,16 +25,13 @@ class MonitoringSystem:
         self.sumOnRunningTime = 0
         self.applianceRunningTimeStart = 0
         self.previousDate = None
-        self.averageOnLoad = 0        
+        self.averageOnLoad = 0
         self.averageOnLoadToday = 0
         self.previousAverageOnLoad = 0
 
-    def import_historical_data(self, data):
-        for entry in data:
-            currentLoad = entry["load"]
-            timestamp = entry["timestamp"]
-            self.analyse_data(currentLoad=currentLoad, timestamp=timestamp, isHistoricalData=True)
-    
+    def import_historical_data(self, currentLoad, timestamp):
+        self.analyse_data(currentLoad=currentLoad, timestamp=timestamp, isHistoricalData=True)            
+
     def calculate_end_of_day_metrics(self, timestamp):
 
         currentDate = datetime.utcfromtimestamp(timestamp).strftime('%Y-%m-%d')
@@ -110,7 +107,7 @@ class MonitoringSystem:
                     + " is on for 50% longer than average "
                     + str(averageOnRunningTime))
                 print(message)
-                utils.send_report(self.deviceId, 'Please check your appliance {}, it has been running for longer than usual.'.format(
+                utils.send_report(self.deviceId, 'Your appliance {} has been running for longer than usual. You may have forgotten to turn if off.'.format(
                     str(self.appliance).title()), reportType=utils.REPORT_TYPE_WARNING)
 
             if not isHistoricalData:
@@ -159,7 +156,7 @@ class MonitoringSystem:
                         + str(self.averageOnLoad)
                     )
                     print(message)
-                    utils.send_report(self.deviceId, 'Please check your appliance {}, it is using more power than usual.'.format(
+                    utils.send_report(self.deviceId, 'Your appliance {} is using more power than usual. Please check that your appliance is working correctly. High power usage can indicate faulty appliances.'.format(
                         str(self.appliance).title()), reportType=utils.REPORT_TYPE_WARNING)
 
         self.previousLoad = currentLoad
