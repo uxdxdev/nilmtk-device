@@ -2,17 +2,11 @@
 
 `nilmtk-device` simulates a monitoring device installed in the home connected to the mains power supply. Users must first sign up on https://nilmtk-service.firebaseapp.com and register a device to receive push notifications.
 
-To get push notifications about abnormalities in unknown appliance running times analysed in the REDD building 1 data run:
-
-`python main.py <device-id>`
-
-- This test assumes the monitoring device has collected 1 day of data from the home and runs the disaggregation algorithm on this data. The resulting predictions contain unknown appliances because of the unsupervised ML algorithm Hart85. Reports will reference appliances 0,1,2,etc.
-
-To simulate this device in a real world setting using the REDD building 1 data run:
+To simulate this device in a real world setting using the REDD dataset run:
 
 `python simulate.py <device-id>`
 
-- currently set to simulate a monitoring device with a delay between measurements of `0.5` seconds, this must be set in the `.env` file, e.g. `DELAY_IN_MEASUREMENT_FREQUENCY=0.5`.
+- currently set to simulate a monitoring device with a delay between measurements of `0.02` seconds, this must be set in the `.env` file, e.g. `DELAY_IN_MEASUREMENT_FREQUENCY_REALTIME_SAMPLING=0.02`.
 
 # Install 
 
@@ -29,19 +23,6 @@ conda env create -f environment.yml
 Convert the data `data/REDD/low_freq` to `data/redd.h5`. This is sample mains data. The monitoring device will record and generate this .h5 file data for disaggregation.
 
 # Run
-
-## `main.py`
-
-Disaggregate the REDD building 1 data using George Harts algorithm. Analyses the predictions made and reports any abnormalities to the user using push notifications.
-
-`python main.py <device-id>`
-
-
-### Options
-
-`id` The device ID used to register the device to a user. See https://nilmtk-service.firebaseapp.com.
-`--update` Update the training model before disaggregation.
-
 
 ## `simulate.py`
 
