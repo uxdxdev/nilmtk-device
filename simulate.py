@@ -15,9 +15,15 @@ def analyse(deviceId, appliance_payload):
 
     appliance = appliance_payload["appliance"]
     load = appliance_payload["load"]
+    ghostLoad = 50
 
     # create new EcoPushMonitoringSystem
-    ecoPushMonitoringSystem = EcoPush.MonitoringSystem(deviceId, appliance)
+    ecoPushConfig = {
+        'deviceId': deviceId,
+        'appliance': appliance,
+        'ghostLoad': ghostLoad
+    }
+    ecoPushMonitoringSystem = EcoPush.MonitoringSystem(ecoPushConfig)
 
     # analyse data for this date
     testDate = '2011-04-25'
@@ -77,8 +83,9 @@ def main():
     # output appliances in building_data
     # print(building_data)
 
-    applianceList = [("fridge", 1)]
-    # , ("dish washer", 1), ("microwave", 1), ("light", 1), ("light", 2), ("light", 3), ("sockets", 2)]
+    # applianceList = [("fridge", 1), ("dish washer", 1), ("microwave", 1)]
+    applianceList = [("fridge", 1), ("light", 2)]
+    # applianceList = [("fridge", 1)]
 
     # get appliance payload from building data
     payloadsForAnalysis = []

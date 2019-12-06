@@ -20,6 +20,12 @@ HOSTNAME_PROD = 'https://nilmtk-service.firebaseapp.com'
 
 HOSTNAME = HOSTNAME_DEV if os.getenv("RUNTIME_ENV") == 'development' else HOSTNAME_PROD
 
+SEND_REPORTS = os.getenv("SEND_REPORTS")
+
+
+def output(text):
+    print('utils.py: {}'.format(text))
+
 
 def match_results(submeters, predictions):
     algorithm = algo.Hart85()
@@ -31,40 +37,38 @@ def current_milli_time():
 
 
 def send_report(deviceId, reportText, reportType='info', appliance=''):
-    RUNTIME_ENV = os.getenv("RUNTIME_ENV")
 
     now = current_milli_time()
 
     # TODO change this when running in production
     deviceSecret = "deviceAGM23nds8xnkdSga"
 
-    if RUNTIME_ENV != 'testing':
+    if SEND_REPORTS == 'enabled':
         # send report to API
         r = requests.post(HOSTNAME + "/api/report",
                           headers={'Content-Type': 'application/json',
                                    'Authorization': 'Bearer ' + deviceSecret},
                           json={'deviceId': deviceId, 'applianceId': appliance, 'reportType': reportType, 'text': reportText, 'date': now})
-        print(r.status_code, r.reason)
+        output(r.status_code, r.reason)
 
 
 def send_report_summary(summary):
-    RUNTIME_ENV = os.getenv("RUNTIME_ENV")
 
     deviceSecret = "deviceAGM23nds8xnkdSga"
 
-    if RUNTIME_ENV != 'testing':
+    if SEND_REPORTS == 'enabled':
         r = requests.post(HOSTNAME + "/api/summary",
                           headers={'Content-Type': 'application/json',
                                    'Authorization': 'Bearer ' + deviceSecret},
                           json={'summary': summary})
-        print(r.status_code, r.reason)
+        output(r.status_code, r.reason)
 
 
 def convert_data():
-    print("Converting data to H5 format...")
+    output("Converting data to H5 format...")
     convert_redd('data/REDD/low_freq',
                  'data/redd.h5')
-    print("Converting data to H5 format complete.")
+    output("Converting data to H5 format complete.")
 
 
 def update_model(training_building):
@@ -73,21 +77,21 @@ def update_model(training_building):
     # the remote service will already provide a model, but for this example
     # we include the training step and upload the model to remote server
     url = train_and_upload_model(mains)
-    print('Updating model done.')
+    output('Updating model done.')
     return url
 
 
 def train_and_upload_model(mains):
     algorithm = algo.Hart85()
 
-    print('Training model...')
+    output('Training model...')
     start = time.time()
     algorithm.train(mains, columns=[('power', 'apparent')])
     algorithm.export_model('models/latest_model.pickle')
     end = time.time()
-    print('Training model done. {} seconds'.format(end - start))
+    output('Training model done. {} seconds'.format(end - start))
 
-    print('Uploading model...')
+    output('Uploading model...')
     start = time.time()
     # export the model to a remote server
     files = {
@@ -100,74 +104,49 @@ def train_and_upload_model(mains):
     response = requests.post('https://file.io/', files=files)
     json = response.json()
     link = json['link']
-    print("Model uploaded to remote server:", link)
+    output("Model uploaded to remote server:", link)
     end = time.time()
-    print('Uploading model done. {} seconds'.format(end - start))
+    output('Uploading model done. {} seconds'.format(end - start))
     return link
 
 
 def disaggregate(mains, path):
     h = algo.Hart85()
 
-    print('Importing model from', path)
+    output('Importing model from {}'.format(path))
     h.import_model(path)
 
-    print('Disaggregating mains...')
+    output('Disaggregating mains...')
     start = time.time()
     output = nilmtk.HDFDataStore('data/disaggregation_store.h5', 'w')
     predictions = h.disaggregate(mains, output)
     end = time.time()
-    print('Disaggregating mains done. {} seconds'.format(end - start))
+    output('Disaggregating mains done. {} seconds'.format(end - start))
 
     output.close()
     return predictions
 
 
 def init(building_number, start='2011-04-25', end='2011-04-26'):
-    print('Importing dataset...')
+    output('Importing dataset...')
     data_set = nilmtk.DataSet('data/redd.h5')
 
-    print('Importing dataset done.', len(data_set.buildings), 'buildings')
+    output('Importing dataset done. {} buildings'.format(len(data_set.buildings)))
     building_data = data_set.buildings[building_number].elec
 
-    print('Full timeframe for data', building_data.get_timeframe())
+    output('Full timeframe for data {}'.format(building_data.get_timeframe()))
 
     data_set.set_window(start=start, end=end)
 
-    print('Timeframe set for data', building_data.get_timeframe())
+    output('Timeframe set for data {}'.format(building_data.get_timeframe()))
 
     return building_data
 
 
-def get_payload_for_appliance(building_data, appliance, id):
-    """ Returns JSON object of appliance name, load, and timestamp.
-
-    Parameters
-    ----------
-    building_data : DataSet.OrderedDict.elec
-        Building data from NILMTK DataSet. E.g building_data = data_set.buildings[1].elec
-
-    appliance: string
-        Name of the appliance in building_data.
-
-    Example:
-    {
-        "appliance":"fridge",
-        "load:[
-            {
-                "timestamp": 1379897298,
-                "load": 6.0
-            },
-            {
-                "timestamp": 1379897301,
-                "load": 7.0
-            }
-        ]
-    }
-    """
-    print('getting payload for', appliance)
+def get_payload_for_appliance(building_data, appliance, id):    
+    output('getting payload for {}'.format(appliance))
     df_appliance = next(building_data[appliance, id].load())
-
+    
     timestamp, load, date = [], [], []
     for timestamp_datetime, j in df_appliance.iterrows():
         timestampResult = timestamp_to_milliseconds(timestamp_datetime)
@@ -186,7 +165,7 @@ def get_payload_for_appliance(building_data, appliance, id):
 
 
 def get_payload_for_unknown_appliance(predictions, appliance_index):
-    print('getting payload for', appliance_index)
+    output('getting payload for {}'.format(appliance_index))
 
     timestamp, load = [], []
     for timestamp_datetime, value in predictions[appliance_index].iteritems():
