@@ -1,6 +1,6 @@
 # Information
 
-`nilmtk-device` simulates a monitoring device installed in the home connected to the mains power supply. Users must first sign up on https://nilmtk-service.firebaseapp.com and register a device to receive push notifications.
+`nilmtk-device` simulates a monitoring device installed in the home connected to the mains power supply.
 
 To simulate this device in a real world setting using the REDD dataset run:
 
