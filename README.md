@@ -30,7 +30,7 @@ Convert the data `data/REDD/low_freq` to `data/redd.h5`. This is sample mains da
 
 ### Options
 
-`id` The device ID used to register the device to a user. See https://nilmtk-service.firebaseapp.com.
+`id` The device ID used to register the device to a user.
 
 Uses raw monitoring data for building 1 in the REDD dataset. Analyses this data and reports any abnormalities to the user using push notifications. Assumes disaggregation has be done on mains and individual appliance level metrics are available.
 
